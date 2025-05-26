@@ -188,7 +188,7 @@ def calculate_total_cost(
     total_labor_cost = labor_cost[f"{optimal_solution}_cost"] / total_months
     
     # Расчет рисков
-    risk_metrics['demand_risk'] = max(0, (np.sum(production_plan) - (total_months * production_params.get('target_boxes', 10000))) / np.sum(production_plan)
+    risk_metrics['demand_risk'] = max(0, (np.sum(production_plan) - (total_months * production_params.get('target_boxes', 10000))) / np.sum(production_plan))
     risk_metrics['total_risk'] = (risk_metrics['supply_risk'] + risk_metrics['production_risk'] + risk_metrics['demand_risk']) / 3
     
     return {
