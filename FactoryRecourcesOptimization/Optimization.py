@@ -1,6 +1,11 @@
 ﻿import numpy as np
 from scipy.optimize import minimize
-import Optimization
+import Costs
+from Costs import calculate_raw_material_costs
+from Costs import calculate_production_costs
+from Costs import calculate_storage_costs
+from Costs import calculate_logistics_costs
+from Costs import calculate_labor_vs_automation
 
 def optimize_business_costs(
     target_boxes: int,                  # Целевой объем производства
@@ -8,6 +13,10 @@ def optimize_business_costs(
     material_per_box: dict,             # Нормы расхода сырья
     base_prices: dict,                  # Базовые цены на сырье
     price_volatility: dict,             # Волатильность цен
+    defect_rate: float,                 # Доля брака (5%)
+    delivery_risk: float,               # Вероятность задержки поставки (10%)
+    safety_stock_days: int,             # Страховой запас (дней)
+    n_simulations: int,                 # Число сценариев Монте-Карло
     production_params: dict,            # Параметры производства
     storage_params: dict,               # Параметры хранения
     logistics_params: dict,             # Параметры логистики
@@ -52,6 +61,7 @@ def optimize_business_costs(
             'fun': lambda x: budget_constraint - calculate_total_cost(
                 x[0:n_months], x[n_months:2*n_months], current_inventory,
                 material_per_box, base_prices, price_volatility,
+                defect_rate, delivery_risk, safety_stock_days, n_simulations,
                 production_params, storage_params, logistics_params, labor_params
             )['total_cost']
         })
@@ -65,6 +75,7 @@ def optimize_business_costs(
         cost_result = calculate_total_cost(
             production, raw_material_orders, current_inventory,
             material_per_box, base_prices, price_volatility,
+            defect_rate, delivery_risk, safety_stock_days, n_simulations,
             production_params, storage_params, logistics_params, labor_params
         )
         
@@ -95,6 +106,7 @@ def optimize_business_costs(
     final_cost = calculate_total_cost(
         optimal_production, raw_material_orders, current_inventory,
         material_per_box, base_prices, price_volatility,
+        defect_rate, delivery_risk, safety_stock_days, n_simulations,
         production_params, storage_params, logistics_params, labor_params
     )
     
@@ -117,6 +129,7 @@ def optimize_business_costs(
 def calculate_total_cost(
     production_plan, raw_material_orders, current_inventory,
     material_per_box, base_prices, price_volatility,
+    defect_rate, delivery_risk, safety_stock_days, n_simulations,
     production_params, storage_params, logistics_params, labor_params
 ):
     """Рассчитывает общие затраты для заданного плана производства и закупок."""
@@ -144,8 +157,10 @@ def calculate_total_cost(
             material_per_box=material_per_box,
             base_prices=base_prices,
             price_volatility=price_volatility,
-            defect_rate=production_params.get('defect_rate', 0.05),
-            delivery_risk=production_params.get('delivery_risk', 0.1)
+            defect_rate=defect_rate,
+            delivery_risk=delivery_risk,
+            safety_stock_days=safety_stock_days,
+            n_simulations=n_simulations
         )
         total_raw_material_cost += raw_material_cost['expected_cost']
         risk_metrics['supply_risk'] += raw_material_cost['risk_above_budget'] / total_months
@@ -153,7 +168,8 @@ def calculate_total_cost(
         # 2. Производственные затраты
         production_cost = calculate_production_costs(
             target_boxes=production_plan[month],
-            **production_params
+            **production_params,
+            n_simulations=n_simulations
         )
         total_production_cost += production_cost['total_cost']
         risk_metrics['production_risk'] += production_cost['failure_risk'] / total_months
@@ -238,6 +254,10 @@ if __name__ == "__main__":
         "material_per_box": {"plastic": 2.0, "dye": 0.5, "packaging": 0.1},
         "base_prices": {"plastic": 100, "dye": 200, "packaging": 50},
         "price_volatility": {"plastic": 0.15, "dye": 0.10, "packaging": 0.05},
+        "defect_rate": 0.05,
+        "delivery_risk": 0.1,
+        "safety_stock_days": 7,
+        "n_simulations": 10000,
         "production_params": {
             "energy_per_box": 2.5,
             "maintenance_per_box": 30,
@@ -254,8 +274,6 @@ if __name__ == "__main__":
             "energy_price_std": 0.8,
             "equipment_failure_rate": 0.05,
             "failure_extra_cost": 200000,
-            "defect_rate": 0.05,
-            "delivery_risk": 0.1,
             "product_value": 1500  # Стоимость 1 коробки
         },
         "storage_params": {
