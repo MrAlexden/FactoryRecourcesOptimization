@@ -178,7 +178,8 @@ def calculate_total_cost(
         storage_cost = calculate_storage_costs(
             inventory_value=(current_inventory['raw_material'] * base_prices['plastic'] + 
                            current_inventory['goods'] * production_params.get('product_value', 1000)),
-            **storage_params
+            **storage_params,
+            n_simulations=n_simulations
         )
         total_storage_cost += storage_cost['avg_total_cost']
         
@@ -186,7 +187,8 @@ def calculate_total_cost(
         logistics_cost = calculate_logistics_costs(
             raw_material_volume=raw_material_orders[month] * sum(material_per_box.values()) / 1000,
             finished_goods_volume=production_plan[month] * 0.01,  # примерный объем
-            **logistics_params
+            **logistics_params,
+            n_simulations=n_simulations
         )
         total_logistics_cost += logistics_cost['total_cost']
         
@@ -274,7 +276,7 @@ if __name__ == "__main__":
             "energy_price_std": 0.8,
             "equipment_failure_rate": 0.05,
             "failure_extra_cost": 200000,
-            "product_value": 1500  # Стоимость 1 коробки
+            #"product_value": 1500  # Стоимость 1 коробки
         },
         "storage_params": {
             "storage_volume": 1000,
@@ -293,14 +295,17 @@ if __name__ == "__main__":
             "security_breach_risk": 0.02
         },
         "logistics_params": {
+            "distance_supplier": 300,
+            "distance_customer": 200,
             "truck_capacity": 12,
             "truck_cost_per_km": 45,
             "truck_fixed_cost": 80000,
             "contractor_cost_per_m3": 550,
             "contractor_delay_risk": 0.15,
-            "distance_supplier": 300,
-            "distance_customer": 200,
-            "estimated_sales": 9000  # Ожидаемые продажи в месяц
+            "fuel_price_mean": 60,
+            "fuel_price_std": 5,
+            "damage_risk": 0.05,
+            "damage_cost_per_m3": 1000,
         },
         "labor_params": {
             "workers_productivity": 120,

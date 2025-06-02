@@ -156,8 +156,6 @@ def calculate_production_costs(
         "cost_breakdown": {k: int(v) for k, v in cost_breakdown.items()}
     }
 
-import numpy as np
-
 def calculate_storage_costs(
     # Основные параметры склада
     storage_volume: float,            # Общий объем склада (м³)
@@ -435,11 +433,11 @@ def calculate_labor_vs_automation(
     automation_cost_npv *= (1 + risk_adjustment)
     
     # 4. Определение оптимального решения
-    optimal_solution = "рабочая сила" if labor_cost_npv < automation_cost_npv else "роботизация"
+    optimal_solution = "labor" if labor_cost_npv < automation_cost_npv else "automation"
     
     # 5. Расчёт срока окупаемости роботизации
     break_even_months = None
-    if optimal_solution == "роботизация":
+    if optimal_solution == "automation":
         cumulative_savings = 0
         monthly_savings = monthly_labor_cost - monthly_robot_cost
         for month in range(1, n_months + 1):
